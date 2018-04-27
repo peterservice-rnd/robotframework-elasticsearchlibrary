@@ -48,4 +48,5 @@ Apache License 2.0
 .. _Robot Framework: http://www.robotframework.org
 .. _Elasticsearch: https://pypi.org/project/elasticsearch/
 
-.. |Build Status| image:: https://travis-ci.org/peterservice-rnd/robotframework-elasticsearchlibrary
+.. |Build Status| image:: https://travis-ci.org/peterservice-rnd/robotframework-elasticsearchlibrary.svg?branch=master
+   :target: https://travis-ci.org/peterservice-rnd/robotframework-elasticsearchlibrary
