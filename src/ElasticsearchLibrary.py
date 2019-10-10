@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+from typing import Dict, Optional, Union
 
 from elasticsearch import Elasticsearch
 from robot.api import logger
@@ -22,12 +23,26 @@ class ElasticsearchLibrary(object):
 
     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
 
-    def __init__(self):
+    def __init__(self) -> None:
         """ Initialization. """
-        self._connection = None
+        self._connection: Optional[Elasticsearch] = None
         self._cache = ConnectionCache()
 
-    def connect_to_elasticsearch(self, host, port, alias='default'):
+    @property
+    def connection(self) -> Elasticsearch:
+        """Check and return connection to Elasticsearch.
+
+        *Raises:*\n
+            RuntimeError: if connection to Elasticsearch hasn't been created yet.
+
+        *Returns:*\n
+            Current connection to Elasticsearch.
+        """
+        if self._connection is None:
+            raise RuntimeError('There is no open connection to Elasticsearch.')
+        return self._connection
+
+    def connect_to_elasticsearch(self, host: str, port: Union[int, str], alias: str = 'default') -> int:
         """
         Open connection to Elasticsearch.
 
@@ -49,9 +64,9 @@ class ElasticsearchLibrary(object):
             self._connection.port = port
             return self._cache.register(self._connection, alias=alias)
         except Exception as e:
-            raise Exception('Connect to Elasticsearch error: {0}'.format(e))
+            raise Exception(f'Connect to Elasticsearch error: {e}')
 
-    def disconnect_from_elasticsearch(self):
+    def disconnect_from_elasticsearch(self) -> None:
         """
         Close connection to Elasticsearch.
 
@@ -61,7 +76,7 @@ class ElasticsearchLibrary(object):
         """
         self._connection = None
 
-    def close_all_elasticsearch_connections(self):
+    def close_all_elasticsearch_connections(self) -> None:
         """
         Close all connections to ElasticSearch.
 
@@ -78,7 +93,7 @@ class ElasticsearchLibrary(object):
         self._connection = None
         self._cache.empty_cache()
 
-    def switch_elasticsearch_connection(self, index_or_alias):
+    def switch_elasticsearch_connection(self, index_or_alias: Union[int, str]) -> int:
         """
         Switch between active connections with several clusters using their index or alias.
 
@@ -110,7 +125,7 @@ class ElasticsearchLibrary(object):
         self._connection = self._cache.switch(index_or_alias)
         return old_index
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         """
         Check availability of Elasticsearch.
 
@@ -130,16 +145,14 @@ class ElasticsearchLibrary(object):
         """
 
         try:
-            info = self._connection.info()
+            info = self.connection.info()
             return info["cluster_name"] == "elasticsearch"
         except Exception as e:
-            logger.debug("Exception {e} raised working with Elasticsearch on"
-                         "{host} and {port}".
-                         format(host=self._connection.host,
-                                port=self._connection.port, e=e))
+            logger.debug(f"Exception {e} raised working with Elasticsearch on "
+                         f"{self.connection.host} and {self.connection.port}")  # type: ignore
             raise
 
-    def es_save_data(self, es_string):
+    def es_save_data(self, es_string: str) -> None:
         """
         Add data to Elasticsearch.
 
@@ -153,9 +166,9 @@ class ElasticsearchLibrary(object):
         """
         json_str = json.dumps({"key": es_string})
         body = json.loads(json_str)
-        self._connection.index(index='es', doc_type='es', id=1, body=body)
+        self.connection.index(index='es', doc_type='es', id=1, body=body)
 
-    def es_retrieve_data(self):
+    def es_retrieve_data(self) -> Dict:
         """
         Get data from Elasticsearch.
 
@@ -168,16 +181,14 @@ class ElasticsearchLibrary(object):
             | Close All Elasticsearch Connections |
         """
         try:
-            data = self._connection.get(index='es', doc_type='es', id=1)
+            data = self.connection.get(index='es', doc_type='es', id=1)
             return data
         except Exception as e:
-            logger.debug("Exception {e} raised working with Elasticsearch on"
-                         "{host} and {port}".
-                         format(host=self._connection.host,
-                                port=self._connection.port, e=e))
+            logger.debug(f"Exception {e} raised working with Elasticsearch on "
+                         f"{self.connection.host} and {self.connection.port}")  # type: ignore
             raise
 
-    def es_search(self, es_string):
+    def es_search(self, es_string: str) -> Dict:
         """
         Search for data in Elasticsearch.
 
@@ -193,13 +204,11 @@ class ElasticsearchLibrary(object):
             | Close All Elasticsearch Connections |
         """
         try:
-            search_result = self._connection.search(
+            search_result = self.connection.search(
                 index="es",
                 body={"query": {"match": {'key': es_string}}})
             return search_result
         except Exception as e:
-            logger.debug("Exception {e} raised working with Elasticsearch on"
-                         "{host} and {port}".
-                         format(host=self._connection.host,
-                                port=self._connection.port, e=e))
+            logger.debug(f"Exception {e} raised working with Elasticsearch on "
+                         f"{self.connection.host} and {self.connection.port}")  # type: ignore
             raise
